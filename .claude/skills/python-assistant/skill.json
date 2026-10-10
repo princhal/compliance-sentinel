@@ -1,0 +1,31 @@
+{
+  "name": "python-assistant",
+  "version": "1.0.0",
+  "description": "All-in-one Python coding assistant: generate, review, refactor, test, and document Python code with production-grade quality.",
+  "type": "builder",
+  "domain": "python-development",
+  "language": "typescript",
+  "operations": [
+    "generate",
+    "review",
+    "refactor",
+    "test",
+    "document"
+  ],
+  "triggers": [
+    "write python",
+    "review python",
+    "refactor python",
+    "generate tests",
+    "add docstrings",
+    "python help",
+    "code quality"
+  ],
+  "config": {
+    "defaultPythonVersion": "3.11",
+    "defaultStyleGuide": "pep8",
+    "defaultDocstringStyle": "google",
+    "defaultTestFramework": "pytest",
+    "typeHints": true
+  }
+}
