@@ -88,6 +88,12 @@ def test_members_cannot_manage_repos_or_settings(client):
                                            "alert_emails": ["legal@acme-legal.com"]},
                     headers=hdr("org_gamma"))
     assert ok.json()["alert_min_severity"] == "high"
+    g = hdr("org_gamma")
+    set_hook = {"slack_webhook_url": "https://hooks.slack.com/services/T/B/x"}
+    assert client.put("/org/settings", json=set_hook, headers=g).json()["slack_webhook_configured"]
+    assert client.put("/org/settings", json={}, headers=g).json()["slack_webhook_configured"]
+    cleared = client.put("/org/settings", json={"clear_slack": True}, headers=g).json()
+    assert cleared["slack_webhook_configured"] is False
 
 
 def test_internal_scrape_requires_token(client):

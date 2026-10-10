@@ -42,3 +42,15 @@ def test_span_rule_soft_delete(tmp_path):
         "def erase_user(u, db):\n    u.is_deleted = True\n    db.session.delete(u)\n")
     hits = [h for h in run_checks(tmp_path) if h.rule_id == "DEL001"]
     assert [h.start_line for h in hits] == [2]
+
+
+def test_python_fallback_without_tree_sitter(monkeypatch):
+    from sentinel.codebase import chunker
+
+    monkeypatch.setattr(chunker, "_parser", lambda lang: None)
+    spans = chunker.chunk_code("import x\n\n@app.get('/u')\ndef handler(u):\n    return u\n", "python")
+    assert [(s.symbol, s.start_line, s.end_line) for s in spans] == [
+        ("<module>", 1, 1), ("handler", 3, 5)]
+    golden_hits = {(h.rule_id, h.path) for h in run_checks(ROOT / "demo-target-repo")}
+    assert ("ACC001", "app/routes/users.py") in golden_hits
+    assert ("DEL001", "app/routes/users.py") in golden_hits

@@ -22,6 +22,9 @@ COPY evals ./evals
 RUN uv sync --frozen --no-dev && useradd --create-home sentinel && mkdir -p /data \
     && chown -R sentinel /data /app
 USER sentinel
+# Bake tree-sitter grammars into the image so audits never depend on a runtime download.
+RUN python -c "import tree_sitter_language_pack as t; \
+t.download(['python', 'javascript', 'typescript', 'tsx', 'go', 'java'])"
 ENV DATA_DIR=/data
 EXPOSE 8080
 CMD ["sentinel", "api", "--port", "8080"]

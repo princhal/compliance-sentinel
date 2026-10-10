@@ -27,6 +27,7 @@ class FindingReviewIn(BaseModel):
 
 
 class OrgSettingsIn(BaseModel):
-    slack_webhook_url: HttpUrl | None = None
+    slack_webhook_url: HttpUrl | None = None  # Omitted or null keeps the current webhook.
+    clear_slack: bool = False
     alert_emails: list[EmailStr] = []
     alert_min_severity: Literal["critical", "high", "medium", "low"] = "critical"

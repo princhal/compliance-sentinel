@@ -229,7 +229,10 @@ def get_org_settings(ctx: OrgContext = Depends(current_org)) -> dict:
 def put_org_settings(body: OrgSettingsIn, ctx: OrgContext = Depends(require_role()),
                      db: Session = Depends(get_db)) -> dict:
     org = db.merge(ctx.org)
-    org.slack_webhook_url = str(body.slack_webhook_url) if body.slack_webhook_url else None
+    if body.clear_slack:
+        org.slack_webhook_url = None
+    elif body.slack_webhook_url:
+        org.slack_webhook_url = str(body.slack_webhook_url)
     org.alert_emails = {"to": [str(e) for e in body.alert_emails]}
     org.alert_min_severity = body.alert_min_severity
     return ser.org_settings(org)

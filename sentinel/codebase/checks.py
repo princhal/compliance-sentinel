@@ -235,7 +235,8 @@ def run_checks(root: Path) -> list[StaticHit]:
                                           rule.message, rule.confidence))
         if lang in CODE:
             for span in chunk_code(text, lang):
-                if span.symbol != "<module>":
+                # Span rules need real function boundaries, not fallback line windows.
+                if span.symbol and span.symbol != "<module>":
                     hits.extend(_span_rules(rel, span.text, span.symbol, span.start_line,
                                             span.end_line))
     if texts:

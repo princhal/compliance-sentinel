@@ -1,0 +1,37 @@
+---
+config:
+  flowchart:
+    curve: linear
+---
+graph TD;
+	__start__([<p>__start__</p>]):::first
+	load_obligations(load_obligations)
+	index_and_scan(index_and_scan)
+	aggregate(aggregate)
+	notify(notify)
+	approval(approval)
+	generate_report(generate_report)
+	__end__([<p>__end__</p>]):::last
+	__start__ --> load_obligations;
+	aggregate -.-> approval;
+	aggregate -.-> notify;
+	approval -.-> __end__;
+	approval -.-> generate_report;
+	check_category\3averify --> aggregate;
+	index_and_scan -.-> aggregate;
+	index_and_scan -.-> check_category\3aplan_checks;
+	load_obligations --> index_and_scan;
+	notify --> approval;
+	generate_report --> __end__;
+	subgraph check_category
+	check_category\3aplan_checks(plan_checks)
+	check_category\3aretrieve_code(retrieve_code)
+	check_category\3aassess(assess)
+	check_category\3averify(verify)
+	check_category\3aassess --> check_category\3averify;
+	check_category\3aplan_checks --> check_category\3aretrieve_code;
+	check_category\3aretrieve_code --> check_category\3aassess;
+	end
+	classDef default fill:#f2f0ff,line-height:1.2
+	classDef first fill-opacity:0
+	classDef last fill:#bfb6fc

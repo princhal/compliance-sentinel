@@ -38,3 +38,21 @@ def test_long_paragraphs_are_split():
     long = "# Article 9 Test\n\n1. " + " ".join(["The controller shall do things."] * 200)
     chunks = chunk_text(long, "X")
     assert len(chunks) > 1 and all(c.section_ref == "X Art. 9(1)" for c in chunks)
+
+
+def test_live_eurlex_html_keeps_exact_citations():
+    """Real EUR-Lex page (Regulation (EU) 2016/679, (c) European Union, https://eur-lex.europa.eu)
+    saved by the scraper's browser fallback. Covers HTML extraction quirks: escaped numbering,
+    points rendered as table rows, and bare article headings followed by a title line."""
+    import gzip
+
+    html = gzip.decompress((Path(__file__).parent / "fixtures" / "eurlex_gdpr_32016R0679.html.gz")
+                           .read_bytes())
+    chunks = {}
+    for c in chunk_text(to_text(html, "text/html"), "GDPR"):
+        chunks.setdefault(c.section_ref, c)
+    assert chunks["GDPR Art. 32(1)(a)"].text.startswith("the pseudonymisation and encryption")
+    assert chunks["GDPR Art. 32(1)"].heading == "Article 32 Security of processing"
+    assert chunks["GDPR Art. 17(1)"].text.startswith("The data subject shall have the right")
+    assert chunks["GDPR Art. 17(1)(b)"].context.startswith("The data subject shall have the right")
+    assert chunks["GDPR Art. 5(1)(e)"].context == "Personal data shall be:"

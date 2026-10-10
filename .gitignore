@@ -7,3 +7,8 @@ __pycache__/
 node_modules/
 .next/
 .claude/scheduled_tasks.lock
+!.env.example
+web/.clerk/
+data/
+evals/results*.json
+*.tsbuildinfo

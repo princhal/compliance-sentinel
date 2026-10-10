@@ -15,6 +15,7 @@ MAX_CHARS = 2500
 _MD_HEADING = re.compile(r"^#{1,6}\s+(.*)$")
 _ARTICLE = re.compile(r"^(?:Article|Art\.)\s+(\d+[a-z]?)\b\.?\s*(.*)$", re.I)
 _SECTION = re.compile(r"^(?:§+|Section|Sec\.)\s*([\d]+(?:\.[\d]+)*[a-z]?)\b\.?\s*(.*)$", re.I)
+_DUTY_WORD = re.compile(r"\b(shall|must|is required|are required|has the right|have the right)\b", re.I)
 _NUM_PARA = re.compile(r"^(\d+[a-z]?)\.\s+(.*)$", re.S)
 _PAREN_LABELS = re.compile(r"^((?:\([a-z0-9]+\))+)\s*(.*)$", re.S | re.I)
 
@@ -53,10 +54,27 @@ def _split_long(text: str) -> list[str]:
     return parts
 
 
+_TABLE_POINT = re.compile(r"^\|\s*(\([a-z0-9]+\))\s*\|\s*(.*?)\s*\|?\s*$", re.I | re.S)
+
+
+def normalize(text: str) -> str:
+    """Undo HTML-to-Markdown artifacts, e.g. EUR-Lex renders "1\\." and points as table rows."""
+    text = re.sub(r"\\([.()\[\]*_#-])", r"\1", text)
+    out = []
+    for para in re.split(r"\n\s*\n", text):
+        stripped = para.strip()
+        if m := _TABLE_POINT.match(stripped):
+            stripped = f"{m.group(1)} {m.group(2)}"
+        out.append(stripped)
+    return "\n\n".join(out)
+
+
 def chunk_text(text: str, regulation: str) -> list[Chunk]:
     chunks: list[Chunk] = []
     base, heading, lead_in, num = "", "", "", ""
     found_structure = False
+    expect_title = False
+    text = normalize(text)
 
     def emit(ref: str, body: str) -> None:
         for i, piece in enumerate(_split_long(body)):
@@ -76,6 +94,8 @@ def chunk_text(text: str, regulation: str) -> list[Chunk]:
             lead_in, num = "", ""
             rest = "\n".join(para.splitlines()[1:]).strip()
             if not rest:
+                # A bare "Article 32" line: the next short line may be its title.
+                expect_title = not ref[1].split(" ", 2)[2:]
                 continue
             para = rest
         elif heading_text:
@@ -83,10 +103,20 @@ def chunk_text(text: str, regulation: str) -> list[Chunk]:
         if not base:
             continue
         body = re.sub(r"\s+", " ", para)
+        if expect_title:
+            expect_title = False
+            if len(body) < 160 and not re.match(r"^[\d(]", body) and not body.endswith((".", ";", ":")):
+                heading = f"{heading} {body}"
+                continue
         if m := _NUM_PARA.match(body):
             num, content = m.group(1), m.group(2)
-            if content.rstrip().endswith(":") and len(content) < 300:
-                lead_in = content  # e.g. "Personal data shall be:" introduces lettered points.
+            if content.rstrip().endswith(":"):
+                # e.g. "Personal data shall be:" introduces lettered points. A short lead-in is only
+                # context; a full sentence with a duty (Art. 17(1), Art. 32(1)) is also a chunk.
+                lead_in = ""
+                if len(content) >= 80 and _DUTY_WORD.search(content):
+                    emit(f"{base}({num})", content)
+                lead_in = content
                 continue
             lead_in = ""
             emit(f"{base}({num})", content)

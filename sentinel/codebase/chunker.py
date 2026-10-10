@@ -50,12 +50,40 @@ def _parser(lang: str):
         return None
 
 
+def _python_ast_spans(source: str, lines: list[str]) -> list[CodeSpan] | None:
+    """Standard-library fallback for Python when no tree-sitter grammar is available."""
+    import ast
+
+    try:
+        tree = ast.parse(source)
+    except SyntaxError:
+        return None
+    spans: list[CodeSpan] = []
+    covered: set[int] = set()
+    for node in tree.body:
+        if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef):
+            start = min([node.lineno] + [d.lineno for d in node.decorator_list])
+            end = node.end_lineno or node.lineno
+            body = lines[start - 1 : end]
+            if len(body) > MAX_LINES:
+                spans.extend(_windows(body, node.name, start - 1))
+            else:
+                spans.append(CodeSpan(node.name, start, end, "\n".join(body)))
+            covered.update(range(start - 1, end))
+    loose = [i for i in range(len(lines)) if i not in covered and lines[i].strip()]
+    if loose:
+        spans.extend(_windows(lines[loose[0] : loose[-1] + 1], "<module>", loose[0]))
+    return sorted(spans, key=lambda sp: sp.start_line)
+
+
 def chunk_code(source: str, lang: str) -> list[CodeSpan]:
     lines = source.splitlines()
     if not lines:
         return []
     parser = _parser(lang) if lang in DEF_NODES else None
     if parser is None:
+        if lang == "python" and (spans := _python_ast_spans(source, lines)) is not None:
+            return spans
         return _windows(lines)
     tree = parser.parse(source.encode())
     kinds = DEF_NODES[lang]
