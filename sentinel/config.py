@@ -5,11 +5,10 @@ from __future__ import annotations
 import os
 from functools import lru_cache
 from pathlib import Path
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
-from typing_extensions import Annotated
 
 EMBEDDING_DIM = 1024  # Fixed by the database schema. voyage-law-2 and voyage-code-3 both emit 1024.
 
@@ -53,6 +52,8 @@ class Settings(BaseSettings):
     dashboard_url: str = "http://localhost:3000"
 
     require_approval: bool = True
+    # Run audits in the API process instead of the queue (local dev and tests only).
+    jobs_inline: bool = False
     confidence_threshold: float = 0.6
     scrape_user_agent: str = (
         "ComplianceSentinel/0.1 (+https://github.com/princhal/compliance-sentinel)"

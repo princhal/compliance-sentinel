@@ -54,3 +54,14 @@ def scrape_and_ingest(source_keys: list[str] | None = None,
     docs = scrape(source_keys, override)
     obligations = ingest(docs) if docs else []
     return {"changed_documents": docs, "new_obligations": obligations}
+
+
+def notify_run(run_id: uuid.UUID) -> None:
+    """Send alerts for a run's alert-worthy violations that have not been alerted yet."""
+    from sentinel.agent.context import AgentContext
+    from sentinel.agent.nodes import notify
+
+    class _Runtime:
+        context = AgentContext()
+
+    notify({"run_id": str(run_id)}, _Runtime())  # type: ignore[arg-type]

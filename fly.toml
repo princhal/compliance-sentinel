@@ -1,0 +1,44 @@
+# Fly.io: one app, three process groups. Secrets are set with `fly secrets set`, never here.
+app = "compliance-sentinel"
+primary_region = "fra"   # Frankfurt keeps EU personal data in the EU.
+
+[build]
+
+[deploy]
+  # Apply migrations and (re)register the daily scrape schedule on every deploy.
+  release_command = "sh -c 'sentinel db-upgrade && sentinel scheduler'"
+
+[env]
+  ENVIRONMENT = "production"
+  AUTH_MODE = "clerk"
+  STORAGE_BACKEND = "s3"
+  REQUIRE_APPROVAL = "true"
+
+[processes]
+  api = "sentinel api --port 8080"
+  worker = "sentinel worker"
+
+[http_service]
+  processes = ["api"]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [[http_service.checks]]
+    path = "/health"
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "20s"
+
+[[vm]]
+  processes = ["api"]
+  size = "shared-cpu-1x"
+  memory = "1gb"
+
+# The worker must stay up: it runs the daily scrape and every audit.
+[[vm]]
+  processes = ["worker"]
+  size = "shared-cpu-2x"
+  memory = "2gb"
