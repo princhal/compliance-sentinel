@@ -60,3 +60,17 @@ def test_heuristic_assess_ignores_padding_lines():
     ob = ObligationView("GDPR", "Art. 32(1)", "encryption_in_transit", "high", "s", "q")
     [item] = HeuristicEngine().assess(ob, [ev])
     assert item.status == "violation"
+
+
+def test_extraction_gate_skips_text_without_duties_or_privacy():
+    from sentinel.ingest.chunker import Chunk
+    from sentinel.ingest.pipeline import worth_extracting
+
+    duty_privacy = Chunk("US-FR para 1", "", "Carriers must protect personal information of riders.", "")
+    duty_only = Chunk("US-FR para 2", "", "Carriers must post timetables at each station.", "")
+    no_duty = Chunk("GDPR Art. 4(1)", "", "'personal data' means any information relating to a person;", "")
+    assert worth_extracting(duty_privacy, "US-FR")
+    assert not worth_extracting(duty_only, "US-FR")
+    assert not worth_extracting(no_duty, "GDPR")
+    assert worth_extracting(Chunk("GDPR Art. 7(1)", "", "The controller shall be able to demonstrate.", ""),
+                            "GDPR")

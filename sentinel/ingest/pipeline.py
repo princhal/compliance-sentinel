@@ -103,6 +103,21 @@ class IngestResult:
     diff: str = ""
 
 
+_DUTY = re.compile(r"\b(shall|must|required|prohibit|may not|has the right|have the right)\b", re.I)
+_PRIVACY = re.compile(r"personal (data|information)|privacy|data subject|consumer|protected health|"
+                      r"\bPHI\b|encrypt|breach|consent|retain|retention|security|confidential", re.I)
+PRIVACY_REGULATIONS = {"GDPR", "UK-GDPR", "UK-GDPR-guidance", "CCPA", "CPRA", "HIPAA"}
+
+
+def worth_extracting(chunk: Chunk, regulation: str) -> bool:
+    """Cheap gate before the LLM: no duty language means no obligation. Text from general sources
+    (e.g. the whole Federal Register) must also be about privacy or security."""
+    body = f"{chunk.context} {chunk.text}"
+    if not _DUTY.search(body):
+        return False
+    return regulation in PRIVACY_REGULATIONS or bool(_PRIVACY.search(body))
+
+
 def _fingerprint(regulation: str, section_ref: str, category: str, quote: str) -> str:
     norm = re.sub(r"\s+", " ", quote).strip().lower()
     return hashlib.sha256(f"{regulation}|{section_ref}|{category}|{norm}".encode()).hexdigest()
@@ -157,6 +172,8 @@ def ingest_document(session: Session, document_id: uuid.UUID, storage: Storage, 
         result.new_chunks = len(rows)
 
         def extract(c: Chunk) -> list[ObligationDraft]:
+            if not worth_extracting(c, doc.regulation):
+                return []
             body = f"{c.context}\n{c.text}".strip()
             return engine.extract_obligations(doc.regulation, c.section_ref, c.heading, body)
 
