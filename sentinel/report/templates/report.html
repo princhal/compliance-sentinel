@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Compliance audit report: {{ repo.name }}</title>
+<style>
+  @page { size: A4; margin: 22mm 18mm 20mm;
+    @top-left { content: "Compliance Sentinel · {{ org.name or org.clerk_org_id }}"; font: 8pt sans-serif; color: #6b7280; }
+    @top-right { content: "Run {{ run.id|string|truncate(8, True, '') }} · {{ (run.commit or '')[:12] }}"; font: 8pt sans-serif; color: #6b7280; }
+    @bottom-left { content: "Decision support, not legal advice."; font: 8pt sans-serif; color: #6b7280; }
+    @bottom-right { content: "Page " counter(page) " of " counter(pages); font: 8pt sans-serif; color: #6b7280; } }
+  @page :first { @top-left { content: none; } @top-right { content: none; } }
+  :root { --ink: #111827; --muted: #6b7280; --line: #e5e7eb; --critical: #b91c1c; --high: #c2410c;
+          --medium: #a16207; --low: #4b5563; --accent: #1e3a8a; }
+  body { font: 10pt/1.45 "Helvetica Neue", Arial, sans-serif; color: var(--ink); }
+  h1 { font-size: 26pt; margin: 0 0 4mm; color: var(--accent); }
+  h2 { font-size: 15pt; margin: 9mm 0 3mm; border-bottom: 1px solid var(--line); padding-bottom: 1.5mm;
+       string-set: section content(); page-break-after: avoid; }
+  h3 { font-size: 11pt; margin: 5mm 0 2mm; page-break-after: avoid; }
+  .cover { page-break-after: always; padding-top: 40mm; }
+  .cover dl { display: grid; grid-template-columns: 38mm auto; gap: 2mm 6mm; margin-top: 12mm; }
+  dt { color: var(--muted); } dd { margin: 0; }
+  .kpis { display: flex; gap: 4mm; margin: 4mm 0; }
+  .kpi { flex: 1; border: 1px solid var(--line); border-radius: 2mm; padding: 3mm; }
+  .kpi b { display: block; font-size: 18pt; }
+  table { width: 100%; border-collapse: collapse; margin: 2mm 0 4mm; font-size: 8.8pt; }
+  th, td { text-align: left; padding: 1.6mm 2mm; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { background: #f3f4f6; font-weight: 600; }
+  tr { page-break-inside: avoid; }
+  .sev { font-weight: 700; text-transform: uppercase; font-size: 7.5pt; letter-spacing: .04em; }
+  .sev-critical { color: var(--critical); } .sev-high { color: var(--high); }
+  .sev-medium { color: var(--medium); } .sev-low { color: var(--low); }
+  .finding { border: 1px solid var(--line); border-radius: 2mm; padding: 3mm 4mm; margin: 0 0 4mm;
+             page-break-inside: avoid; }
+  .finding .meta { color: var(--muted); font-size: 8.5pt; }
+  pre { font: 7.6pt/1.35 Menlo, Consolas, monospace; background: #f9fafb; border: 1px solid var(--line);
+        padding: 2mm; white-space: pre-wrap; word-break: break-all; margin: 2mm 0; }
+  blockquote { margin: 2mm 0; padding-left: 3mm; border-left: 2px solid var(--accent); color: #374151; }
+  .muted { color: var(--muted); } code { font: 8.5pt Menlo, monospace; }
+  .sign { margin-top: 8mm; border: 1px solid var(--line); padding: 4mm; border-radius: 2mm; page-break-inside: avoid; }
+  .sign .line { border-bottom: 1px solid var(--ink); height: 10mm; width: 70mm; }
+  .synthetic { color: var(--critical); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<section class="cover">
+  <div class="muted">Compliance Sentinel</div>
+  <h1>Compliance audit report</h1>
+  <div style="font-size:13pt">{{ repo.name }}</div>
+  <dl>
+    <dt>Organization</dt><dd>{{ org.name or org.clerk_org_id }}</dd>
+    <dt>Repository</dt><dd>{{ repo.url }}</dd>
+    <dt>Commit</dt><dd><code>{{ run.commit }}</code></dd>
+    <dt>Run ID</dt><dd><code>{{ run.id }}</code></dd>
+    <dt>Trigger</dt><dd>{{ run.trigger }}{% if run.triggered_by %} by {{ run.triggered_by }}{% endif %}</dd>
+    <dt>Generated</dt><dd>{{ generated_at.strftime("%Y-%m-%d %H:%M UTC") }}</dd>
+    <dt>Analysis engine</dt><dd>{{ run.llm_engine }}</dd>
+    <dt>Manifest SHA-256</dt><dd><code style="font-size:7.5pt">{{ manifest_sha }}</code></dd>
+  </dl>
+</section>
+
+<h2>Executive summary</h2>
+<div class="kpis">
+  <div class="kpi"><b class="sev-critical">{{ by_sev.get('critical', 0) }}</b>Critical violations</div>
+  <div class="kpi"><b class="sev-high">{{ by_sev.get('high', 0) }}</b>High</div>
+  <div class="kpi"><b class="sev-medium">{{ by_sev.get('medium', 0) }}</b>Medium</div>
+  <div class="kpi"><b>{{ by_status.get('needs_review', 0) }}</b>Need human review</div>
+</div>
+<p>The audit compared commit <code>{{ (run.commit or '')[:12] }}</code> of <b>{{ repo.name }}</b> against
+{{ run.stats.get('obligations', 0) }} code-checkable obligations from {{ documents|length }} regulatory documents.
+It found <b>{{ violations|length }}</b> violations and <b>{{ reviews|length }}</b> items that need a human decision.</p>
+{% if by_cat %}
+<table><tr><th>Most frequent issue</th><th style="width:20mm">Violations</th></tr>
+{% for label, n in by_cat %}<tr><td>{{ label }}</td><td>{{ n }}</td></tr>{% endfor %}</table>
+{% endif %}
+
+<h2>Scope</h2>
+<table>
+  <tr><th>Regulation</th><th>Document</th><th>Version</th><th>Retrieved</th></tr>
+  {% for d in documents %}
+  <tr><td>{{ d.regulation }}</td><td>{{ d.title }}<br><span class="muted">{{ d.url }}</span></td>
+      <td>v{{ d.current_version }}</td><td>{{ d.fetched_at.strftime("%Y-%m-%d") }}</td></tr>
+  {% endfor %}
+</table>
+
+<h2>Findings overview</h2>
+{% if findings %}
+<table>
+  <tr><th>#</th><th>Severity</th><th>Status</th><th>Issue</th><th>Location</th><th>Citation</th></tr>
+  {% for f in findings %}
+  <tr><td>{{ loop.index }}</td><td class="sev sev-{{ f.severity }}">{{ f.severity }}</td>
+      <td>{{ f.status|replace('_', ' ') }}</td><td>{{ categories[f.category].label }}</td>
+      <td><code>{{ f.path }}:{{ f.start_line }}</code></td>
+      <td>{{ f.citations|map(attribute='section_ref')|join(', ') }}</td></tr>
+  {% endfor %}
+</table>
+{% else %}<p>No violations or review items were found.</p>{% endif %}
+
+<h2>Detailed findings</h2>
+{% for f in findings %}
+<div class="finding">
+  <h3>{{ loop.index }}. <span class="sev sev-{{ f.severity }}">{{ f.severity }}</span>
+      {{ categories[f.category].label }}</h3>
+  <div class="meta">{{ f.status|replace('_', ' ')|capitalize }} · confidence {{ "%.0f"|format(f.confidence * 100) }}%
+      · detected by {{ f.rule_id }} · <code>{{ f.path }}</code> lines {{ f.start_line }}–{{ f.end_line }}</div>
+  <pre>{{ f.evidence }}</pre>
+  <p>{{ f.reasoning }}</p>
+  {% for c in f.citations[:3] %}
+  <blockquote><b>{{ c.section_ref }}</b>: “{{ c.quote|truncate(420) }}”<br>
+    <span class="muted">Source: {{ c.source_url }} · retrieved {{ c.retrieved_at[:10] }}</span></blockquote>
+  {% endfor %}
+  {% if f.citations|length > 3 %}<p class="muted">Also relevant: {{ f.citations[3:]|map(attribute='section_ref')|join(', ') }}</p>{% endif %}
+</div>
+{% endfor %}
+
+{% if changed %}
+<h2>Appendix A: changed regulations</h2>
+{% for c in changed %}
+<h3>{{ c.doc.regulation }}: {{ c.doc.title }} (v{{ c.version }})</h3>
+<pre>{{ c.diff }}</pre>
+{% endfor %}
+{% endif %}
+
+<h2>Appendix B: method</h2>
+<p>Regulatory texts were fetched from their official sources, split into one chunk per article paragraph,
+and turned into structured obligations. Each obligation has a category that maps to static checks.
+For every category, the agent combined static check hits with hybrid code search, assessed each piece of
+evidence against the obligation, and sent every violation through a second review. Findings below
+the confidence threshold are marked for human review. Code locations always come from the
+repository itself, never from model output.</p>
+<p class="muted">This report supports a legal and engineering review. It is not legal advice.
+Bundled regulation excerpts used in demos must be checked against the official texts.</p>
+
+<div class="sign">
+  <b>Approval</b>
+  {% if approved_by_name %}
+  <p>Approved by <b>{{ approved_by_name }}</b> on {{ approved_at.strftime("%Y-%m-%d %H:%M UTC") }} in Compliance Sentinel.</p>
+  {% else %}
+  <p class="muted">No in-app approval was recorded for this run.</p>
+  {% endif %}
+  <div class="line"></div><div class="muted">Signature</div>
+</div>
+</body>
+</html>

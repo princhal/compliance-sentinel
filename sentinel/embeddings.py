@@ -15,20 +15,32 @@ _TOKEN = re.compile(r"[A-Za-z_][A-Za-z0-9_]+|\d+")
 
 class Embedder(Protocol):
     name: str
+    vector_weight: float
 
     def embed_documents(self, texts: list[str], kind: Kind) -> list[list[float]]: ...
     def embed_query(self, text: str, kind: Kind) -> list[float]: ...
+
+
+_SUFFIXES = ("isations", "izations", "isation", "ization", "ations", "ation", "ions", "ion",
+             "ings", "ing", "ers", "er", "ed", "es", "s", "ly")
+
+
+def _stem(word: str) -> str:
+    for suf in _SUFFIXES:
+        if len(word) > len(suf) + 3 and word.endswith(suf):
+            return word[: -len(suf)]
+    return word
 
 
 def _tokens(text: str) -> list[str]:
     words: list[str] = []
     for tok in _TOKEN.findall(text):
         low = tok.lower()
-        words.append(low)
+        words.append(_stem(low))
         # Split snake_case and camelCase so "user_email" matches "email".
         parts = [p for p in re.split(r"_|(?<=[a-z])(?=[A-Z])", tok) if p]
         if len(parts) > 1:
-            words.extend(p.lower() for p in parts)
+            words.extend(_stem(p.lower()) for p in parts)
     return words
 
 
@@ -36,6 +48,7 @@ class HashEmbedder:
     """Feature-hashed bag of words and bigrams. No network, stable across runs."""
 
     name = "hash-1024"
+    vector_weight = 0.5  # Weak semantic signal: hybrid search leans on keywords instead.
 
     def _vec(self, text: str) -> list[float]:
         vec = [0.0] * EMBEDDING_DIM
@@ -62,6 +75,7 @@ class VoyageEmbedder:
 
         self.client = voyageai.Client(api_key=settings.voyage_api_key or None)
         self.models = {"law": settings.voyage_law_model, "code": settings.voyage_code_model}
+        self.vector_weight = 1.0
         self.name = f"voyage:{self.models['law']}+{self.models['code']}"
 
     def embed_documents(self, texts: list[str], kind: Kind) -> list[list[float]]:

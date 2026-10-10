@@ -1,0 +1,44 @@
+# Answer key for demo-target-repo. Kept outside the target repo so the agent never sees it.
+# A finding matches a label when path and category are equal and its line range contains `match`.
+# `match` is a unique substring of the labeled line; `line` is used for repository-level labels.
+# difficulty: easy = a static rule should catch it; hard = needs reasoning about the code.
+repo: demo-target-repo
+violations:
+  - {id: V01, path: .env, match: "SMTP_PASSWORD=", category: secrets_management, difficulty: easy}
+  - {id: V02, path: app/config.py, match: "PAYMENT_API_KEY =", category: secrets_management, difficulty: easy}
+  - {id: V03, path: app/config.py, match: "ANALYTICS_URL =", category: encryption_in_transit, difficulty: easy}
+  - {id: V04, path: app/config.py, match: "EXPORT_REGION =", category: cross_border_transfer, difficulty: easy}
+  - {id: V05, path: app/config.py, match: "CUSTOMER_DATA_RETENTION_DAYS = None", category: data_retention, difficulty: easy}
+  - {id: V06, path: app/models.py, match: "ssn = Column", category: encryption_at_rest, difficulty: easy}
+  - {id: V07, path: app/models.py, match: "card_number = Column", category: encryption_at_rest, difficulty: easy}
+  - {id: V08, path: app/models.py, match: "diagnosis = Column", category: encryption_at_rest, difficulty: easy}
+  - {id: V09, path: app/auth.py, match: "hashlib.md5(password", category: password_storage, difficulty: easy}
+  - {id: V10, path: app/auth.py, match: "password=payload.password", category: password_storage, difficulty: easy}
+  - {id: V11, path: app/auth.py, match: "Login attempt for", category: pii_logging, difficulty: easy}
+  - {id: V12, path: app/routes/users.py, match: '@router.get("/users/{user_id}")', category: access_control, difficulty: easy}
+  - {id: V13, path: app/routes/users.py, match: "return user.to_dict()", category: data_minimization, difficulty: easy}
+  - {id: V14, path: app/routes/users.py, match: 'logger.debug("Created user', category: pii_logging, difficulty: easy}
+  - {id: V15, path: app/routes/users.py, match: "current_user.is_deleted = True", category: data_deletion, difficulty: easy}
+  - {id: V16, path: app/routes/orders.py, match: "SELECT * FROM customers", category: data_minimization, difficulty: easy}
+  - {id: V17, path: app/routes/orders.py, match: "partner-fulfilment.shipco.net", category: encryption_in_transit, difficulty: easy}
+  - {id: V18, path: app/marketing.py, match: 'analytics.track(user.id, "signup"', category: consent, difficulty: easy}
+  - {id: V19, path: app/storage.py, match: "Body=data)", category: encryption_at_rest, difficulty: easy}
+  - {id: V20, path: app/export.py, match: "Exporting customer", category: pii_logging, difficulty: easy}
+  - {id: V21, path: app/clinic.py, match: 'LAB_API = "http://', category: encryption_in_transit, difficulty: easy}
+  - {id: V22, path: web/static/track.js, match: 'console.log("checkout", user.email', category: pii_logging, difficulty: easy}
+  - {id: V23, path: app/models.py, line: 1, category: breach_notification, difficulty: easy, scope: repository}
+  - {id: H01, path: app/profile.py, match: 'logger.info("Profile updated', category: pii_logging, difficulty: hard}
+  - {id: H02, path: app/profile.py, match: "redis_client.set(", category: encryption_at_rest, difficulty: hard}
+  - {id: H03, path: app/marketing.py, match: "requests.post(ANALYTICS_URL", category: consent, difficulty: hard}
+decoys:
+  - {id: D01, path: app/models.py, match: "passport_number = Column(EncryptedType", category: encryption_at_rest}
+  - {id: D02, path: app/auth.py, match: "bcrypt.hashpw", category: password_storage}
+  - {id: D03, path: app/routes/users.py, match: '@router.get("/me")', category: access_control}
+  - {id: D04, path: app/routes/users.py, match: "redact(user.email)", category: pii_logging}
+  - {id: D05, path: app/routes/orders.py, match: "https://api.shipco.net/rates", category: encryption_in_transit}
+  - {id: D06, path: app/storage.py, match: 'ServerSideEncryption="aws:kms"', category: encryption_at_rest}
+  - {id: D07, path: app/marketing.py, match: "marketing_client.send(", category: consent}
+  - {id: D08, path: app/config.py, match: "API_KEY_PLACEHOLDER =", category: secrets_management}
+  - {id: D09, path: app/config.py, match: "SVG_NAMESPACE =", category: encryption_in_transit}
+  - {id: D10, path: app/clinic.py, match: 'LAB_API_SECURE = "https://', category: encryption_in_transit}
+  - {id: D11, path: web/static/track.js, match: 'console.log("checkout complete"', category: pii_logging}

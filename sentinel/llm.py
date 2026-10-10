@@ -235,7 +235,19 @@ def _norm(s: str) -> str:
 
 def _sentences(text: str) -> list[str]:
     flat = re.sub(r"\s+", " ", text)
-    return [s.strip() for s in re.split(r"(?<=[.;:])\s+(?=[(A-Z])", flat) if s.strip()]
+    return [s.strip() for s in re.split(r"(?<=[.;])\s+(?=[(A-Z])", flat) if s.strip()]
+
+
+def _flagged_text(e: EvidenceItem) -> str:
+    """Only the flagged lines of a numbered snippet, without the padding around them."""
+    out = []
+    for line in e.snippet.splitlines():
+        m = re.match(r"\s*(\d+) \| ?(.*)", line)
+        if m is None:
+            out.append(line)
+        elif e.start_line <= int(m.group(1)) <= e.end_line:
+            out.append(m.group(2))
+    return "\n".join(out)
 
 
 class HeuristicEngine:
@@ -282,7 +294,7 @@ class HeuristicEngine:
             if e.source == "search":
                 continue  # Without a model, only static rule hits count as evidence.
             mitigated = _MITIGATIONS.get(ob.category)
-            if mitigated and mitigated.search(e.snippet) and e.rule_confidence < 0.9:
+            if mitigated and mitigated.search(_flagged_text(e)) and e.rule_confidence < 0.9:
                 status, conf = "compliant", 0.5
             elif e.rule_confidence >= 0.75:
                 status, conf = "violation", e.rule_confidence
@@ -298,7 +310,8 @@ class HeuristicEngine:
     def verify(self, ob: ObligationView, item: AssessedItem, ev: EvidenceItem,
                file_excerpt: str) -> Verification:
         # The deterministic check: the flagged lines must still contain the matched code.
-        present = _norm(ev.snippet.splitlines()[0] if ev.snippet else "") in _norm(file_excerpt)
+        flagged = _norm(_flagged_text(ev).splitlines()[0] if _flagged_text(ev) else "")
+        present = bool(flagged) and flagged in _norm(file_excerpt)
         return Verification(confirmed=present, confidence=item.confidence if present else 0.2,
                             reason="Flagged code is present in the file." if present
                             else "Flagged code was not found at the cited lines.")

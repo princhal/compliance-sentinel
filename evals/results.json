@@ -1,0 +1,57 @@
+{
+  "run_id": "558dc763-3f29-4652-9e1f-2a14a2652770",
+  "engine": "offline-heuristic",
+  "findings": {
+    "violations_labeled": 26,
+    "decoys_labeled": 11,
+    "confirmed_findings": 19,
+    "needs_review_findings": 4,
+    "true_positives": 19,
+    "false_positives": 0,
+    "precision": 1.0,
+    "recall": 0.731,
+    "f1": 0.844,
+    "recall_including_needs_review": 0.885,
+    "decoy_false_alarms": [],
+    "by_difficulty": {
+      "easy": {
+        "labels": 23,
+        "recall_confirmed": 0.826,
+        "recall_flagged": 1.0
+      },
+      "hard": {
+        "labels": 3,
+        "recall_confirmed": 0.0,
+        "recall_flagged": 0.0
+      }
+    },
+    "missed": [
+      "H01",
+      "H02",
+      "H03"
+    ],
+    "false_positive_locations": []
+  },
+  "citations": {
+    "citations_checked": 56,
+    "citation_accuracy": 1.0
+  },
+  "retrieval": {
+    "embedder": "hash-1024",
+    "k": 5,
+    "questions": 15,
+    "recall_at_5": 0.8,
+    "mrr": 0.689,
+    "missed_questions": [
+      "Can we store EU customer data on servers in the United States?",
+      "Should we collect only the fields we need?",
+      "Is pseudonymisation required?"
+    ]
+  },
+  "cost": {
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "usd": 0.0,
+    "seconds": 1.0
+  }
+}

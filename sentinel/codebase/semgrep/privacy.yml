@@ -1,0 +1,30 @@
+# Optional Semgrep rules. Sentinel runs them when `semgrep` is on PATH and merges the results
+# with its built-in checks. metadata.category must match a Sentinel taxonomy category.
+rules:
+  - id: requests-verify-disabled
+    languages: [python]
+    severity: ERROR
+    message: TLS certificate verification is disabled for an outbound request.
+    metadata: {category: encryption_in_transit, confidence_score: 0.9}
+    pattern-either:
+      - pattern: requests.$METHOD(..., verify=False, ...)
+      - pattern: httpx.$METHOD(..., verify=False, ...)
+  - id: weak-password-hash
+    languages: [python]
+    severity: ERROR
+    message: Password hashed with MD5 or SHA-1.
+    metadata: {category: password_storage, confidence_score: 0.9}
+    pattern-either:
+      - pattern: hashlib.md5($PW.encode(...))
+      - pattern: hashlib.sha1($PW.encode(...))
+  - id: pii-in-log-fstring
+    languages: [python]
+    severity: WARNING
+    message: Personal data interpolated into a log message.
+    metadata: {category: pii_logging, confidence_score: 0.85}
+    patterns:
+      - pattern: $LOG.$LEVEL(f"...", ...)
+      - metavariable-regex:
+          metavariable: $LEVEL
+          regex: (debug|info|warning|error|exception)
+      - pattern-regex: (email|ssn|phone|date_of_birth|card_number)

@@ -277,6 +277,8 @@ class Finding(TimestampMixin, Base):
     reasoning: Mapped[str] = mapped_column(Text)
     confidence: Mapped[float] = mapped_column(Float)
     fingerprint: Mapped[str] = mapped_column(String(64), index=True)
+    # Every obligation this finding breaches: [{obligation_id, regulation, section_ref, source_url}]
+    citations: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, default=list)
     reviewed_by: Mapped[str | None] = mapped_column(String(64))
     reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     obligation: Mapped[Obligation] = relationship()

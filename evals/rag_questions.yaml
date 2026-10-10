@@ -1,0 +1,18 @@
+# Retrieval eval: each question lists the section references a good answer must cite.
+# recall@k = share of questions where at least one expected section is in the top k.
+questions:
+  - {q: "How long are we allowed to keep customer personal data?", expected: ["GDPR Art. 5(1)(e)", "CCPA § 1798.100(a)(3)"]}
+  - {q: "Do we have to encrypt personal data?", expected: ["GDPR Art. 32(1)", "HIPAA § 164.312(a)(2)(iv)"]}
+  - {q: "A user asked us to delete their account. What must we do?", expected: ["GDPR Art. 17(1)", "CCPA § 1798.105(a)", "CCPA § 1798.105(c)(1)"]}
+  - {q: "When must we tell the regulator about a data breach?", expected: ["GDPR Art. 33(1)"]}
+  - {q: "Can we store EU customer data on servers in the United States?", expected: ["GDPR Art. 44"]}
+  - {q: "What proof of consent do we need to keep?", expected: ["GDPR Art. 7(1)"]}
+  - {q: "Should we collect only the fields we need?", expected: ["GDPR Art. 5(1)(c)", "GDPR Art. 25(2)"]}
+  - {q: "Who may access electronic health records in our system?", expected: ["HIPAA § 164.312(a)(1)"]}
+  - {q: "Do health records sent over the network need protection?", expected: ["HIPAA § 164.312(e)(1)"]}
+  - {q: "What security measures does California require for personal information?", expected: ["CCPA § 1798.100(e)"]}
+  - {q: "Protect personal data against unauthorised processing and accidental loss", expected: ["GDPR Art. 5(1)(f)", "GDPR Art. 32(1)"]}
+  - {q: "Must we tell our vendors when a consumer asks for deletion?", expected: ["CCPA § 1798.105(c)(1)"]}
+  - {q: "Is pseudonymisation required?", expected: ["GDPR Art. 32(1)"]}
+  - {q: "Privacy by default settings", expected: ["GDPR Art. 25(2)"]}
+  - {q: "Maximum retention period for sensitive personal information in California", expected: ["CCPA § 1798.100(a)(3)"]}
