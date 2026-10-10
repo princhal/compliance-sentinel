@@ -12,3 +12,5 @@ web/.clerk/
 data/
 evals/results*.json
 *.tsbuildinfo
+# Planted fake secret: one of the deliberate violations in the demo target repo.
+!demo-target-repo/.env
