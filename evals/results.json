@@ -1,5 +1,5 @@
 {
-  "run_id": "da8374c3-5362-41a9-af2e-866720c6f90b",
+  "run_id": "28986059-667b-4c60-8dc4-3b62e77f3c20",
   "engine": "offline-heuristic",
   "findings": {
     "violations_labeled": 26,
@@ -52,6 +52,6 @@
     "input_tokens": 0,
     "output_tokens": 0,
     "usd": 0.0,
-    "seconds": 1.1
+    "seconds": 1.3
   }
 }
