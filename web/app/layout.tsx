@@ -39,8 +39,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <Link href="/regulations">Regulations</Link>
                 <Link href="/settings">Settings</Link>
               </nav>
-              <OrganizationSwitcher hidePersonal afterSelectOrganizationUrl="/runs" />
-              <UserButton />
+              {/* Clerk mounts these client-side; the slots hold their size so the header doesn't jump. */}
+              <div className="clerk-slot slot-org">
+                <OrganizationSwitcher hidePersonal afterSelectOrganizationUrl="/runs" />
+              </div>
+              <div className="clerk-slot slot-user">
+                <UserButton />
+              </div>
             </Show>
             <Show when="signed-out">
               <nav />

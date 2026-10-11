@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { SeverityBadge } from "@/components/Badges";
+import { formatDay, SeverityBadge } from "@/components/Badges";
 import { api } from "@/lib/api";
 import type { Obligation, Regulation } from "@/lib/types";
 
@@ -24,7 +24,7 @@ export default async function RegulationsPage() {
                 <td>{d.regulation}</td>
                 <td><a href={d.url} target="_blank" rel="noreferrer">{d.title}</a></td>
                 <td>v{d.version}</td>
-                <td>{new Date(d.fetched_at).toLocaleDateString("en-GB")}</td>
+                <td>{formatDay(d.fetched_at)}</td>
               </tr>
             ))}
           </tbody>
@@ -39,12 +39,29 @@ export default async function RegulationsPage() {
               <tr key={o.id}>
                 <td>{o.section_ref}</td><td>{o.category.replaceAll("_", " ")}</td>
                 <td><SeverityBadge severity={o.severity} /></td>
-                <td className="muted">{o.quote.length > 220 ? `${o.quote.slice(0, 220)}…` : o.quote}</td>
+                <td className="muted"><Duty quote={o.quote} /></td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
     </>
+  );
+}
+
+const PREVIEW_CHARS = 220;
+
+/** Long duties start collapsed; the native disclosure keeps the full text readable and keyboard-accessible. */
+function Duty({ quote }: { quote: string }) {
+  if (quote.length <= PREVIEW_CHARS) return <>{quote}</>;
+  return (
+    <details className="duty">
+      <summary>
+        <span className="preview">{quote.slice(0, PREVIEW_CHARS)}… </span>
+        <span className="toggle more">Show full text</span>
+        <span className="toggle less">Show less</span>
+      </summary>
+      {quote}
+    </details>
   );
 }

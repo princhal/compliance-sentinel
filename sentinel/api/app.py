@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import hmac
 import logging
+import re
 import uuid
 from typing import Any
 
@@ -213,8 +214,14 @@ def list_obligations(regulation: str | None = None, ctx: OrgContext = Depends(cu
     q = select(Obligation).where(Obligation.active.is_(True))
     if regulation:
         q = q.where(Obligation.regulation == regulation)
-    return [ser.obligation(o) for o in db.scalars(q.order_by(Obligation.regulation,
-                                                             Obligation.section_ref))]
+    rows = db.scalars(q).all()
+    return [ser.obligation(o) for o in sorted(rows, key=lambda o: (o.regulation, section_sort_key(o.section_ref)))]
+
+
+def section_sort_key(ref: str) -> list[str | int]:
+    """Orders citations by their numbers, so "Art. 5(1)(c)" sorts before "Art. 44" and "Art. 32(3a)"."""
+    # re.split with a capture group alternates text and digits, so items at the same index share a type.
+    return [int(t) if t.isdigit() else t for t in re.split(r"(\d+)", ref)]
 
 
 # --- Org settings ------------------------------------------------------------------------------

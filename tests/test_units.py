@@ -74,3 +74,13 @@ def test_extraction_gate_skips_text_without_duties_or_privacy():
     assert not worth_extracting(no_duty, "GDPR")
     assert worth_extracting(Chunk("GDPR Art. 7(1)", "", "The controller shall be able to demonstrate.", ""),
                             "GDPR")
+
+
+def test_section_refs_sort_by_number_not_text():
+    from sentinel.api.app import section_sort_key
+
+    refs = ["GDPR Art. 44", "GDPR Art. 5(1)(f)", "GDPR Art. 32(3a)", "GDPR Art. 5(1)(c)", "GDPR Art. 32(1)",
+            "CCPA § 1798.105(c)(1)", "CCPA § 1798.100(e)"]
+    assert sorted(refs, key=section_sort_key) == [
+        "CCPA § 1798.100(e)", "CCPA § 1798.105(c)(1)", "GDPR Art. 5(1)(c)", "GDPR Art. 5(1)(f)",
+        "GDPR Art. 32(1)", "GDPR Art. 32(3a)", "GDPR Art. 44"]

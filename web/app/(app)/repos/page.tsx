@@ -12,27 +12,33 @@ export default async function ReposPage() {
   return (
     <>
       <h1>Repositories</h1>
-      <div className="table-wrap">
-        <table>
-          <thead><tr><th>Name</th><th>URL</th><th>Last commit</th><th>Indexed</th><th /></tr></thead>
-          <tbody>
-            {repos.map((r) => (
-              <tr key={r.id}>
-                <td>{r.name}</td><td className="muted">{r.url}</td>
-                <td>{r.last_commit?.slice(0, 12) ?? "–"}</td><td>{formatDate(r.last_indexed_at)}</td>
-                <td>
-                  {isAdmin && (
-                    <form action={deleteRepo}>
-                      <input type="hidden" name="repo_id" value={r.id} />
-                      <button className="danger" type="submit">Remove</button>
-                    </form>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {repos.length === 0 ? (
+        <p className="muted">
+          No repositories yet. {isAdmin ? "Add one below to start auditing it." : "Ask an admin to add one."}
+        </p>
+      ) : (
+        <div className="table-wrap">
+          <table>
+            <thead><tr><th>Name</th><th>URL</th><th>Last commit</th><th>Indexed</th><th /></tr></thead>
+            <tbody>
+              {repos.map((r) => (
+                <tr key={r.id}>
+                  <td>{r.name}</td><td className="muted">{r.url}</td>
+                  <td>{r.last_commit?.slice(0, 12) ?? "–"}</td><td>{formatDate(r.last_indexed_at)}</td>
+                  <td>
+                    {isAdmin && (
+                      <form action={deleteRepo}>
+                        <input type="hidden" name="repo_id" value={r.id} />
+                        <button className="danger" type="submit">Remove</button>
+                      </form>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
       {isAdmin && (
         <>
           <h2>Add a repository</h2>

@@ -19,6 +19,9 @@ header.top { display: flex; align-items: center; gap: 20px; padding: 12px 24px;
   background: var(--surface); border-bottom: 1px solid var(--line); flex-wrap: wrap; }
 header.top .brand { font-weight: 700; color: var(--ink); }
 header.top nav { display: flex; gap: 16px; flex: 1; flex-wrap: wrap; }
+header.top .clerk-slot { display: flex; align-items: center; min-height: 36px; }
+header.top .slot-org { min-width: 200px; }
+header.top .slot-user { min-width: 28px; justify-content: center; }
 main { max-width: 1100px; margin: 0 auto; padding: 24px 16px 64px; }
 h1 { font-size: 24px; margin: 0 0 16px; }
 h2 { font-size: 18px; margin: 28px 0 12px; }
@@ -53,3 +56,12 @@ blockquote { margin: 8px 0; padding-left: 12px; border-left: 3px solid var(--acc
 .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .hero { padding: 48px 0; max-width: 680px; }
 .hero h1 { font-size: 34px; }
+details.duty > summary { cursor: pointer; list-style: none; }
+details.duty > summary::-webkit-details-marker { display: none; }
+details.duty .toggle { color: var(--accent); white-space: nowrap; }
+details.duty .less, details.duty[open] .more, details.duty[open] .preview { display: none; }
+details.duty[open] .less { display: inline; }
+details.duty[open] > summary { margin-bottom: 4px; }
+.error { color: var(--critical); margin: 0; }
+.success { color: var(--ok); margin: 0; }
+input[aria-invalid="true"] { border-color: var(--critical); }
