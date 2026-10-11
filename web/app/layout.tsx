@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ClerkProvider, OrganizationSwitcher, Show, SignInButton, UserButton } from "@clerk/nextjs";
+import { ClerkProvider, OrganizationSwitcher, Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 
 import "./globals.css";
 
@@ -29,6 +29,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <Show when="signed-out">
               <nav />
               <SignInButton />
+              <SignUpButton />
             </Show>
           </header>
           <main>{children}</main>
