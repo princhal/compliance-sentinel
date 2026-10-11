@@ -148,6 +148,8 @@ make web               # Next.js on :3000
 ```
 
 In local dev the dashboard forwards the Clerk user, org and role to an API running `AUTH_MODE=dev`.
+If port 8000 is taken, run `make api API_PORT=8010` and set `SENTINEL_API_URL=http://localhost:8010` in
+`web/.env.local`. Another server on `127.0.0.1:8000` silently wins over the API's `0.0.0.0:8000`.
 In staging and production the API verifies Clerk session tokens itself with `clerk-backend-api`. It
 handles both Clerk token formats; v2 nests the org under `o`, which the SDK's helper does not read.
 This path was checked against a live Clerk dev instance: no token and tampered tokens get 401, and a

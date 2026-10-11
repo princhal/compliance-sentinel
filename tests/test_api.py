@@ -123,3 +123,14 @@ def test_clerk_webhook_signature_and_idempotency(client, monkeypatch):
     assert client.post("/webhooks/clerk", content=body, headers=bad).status_code == 400
     me = client.get("/me", headers=hdr("org_hooked")).json()
     assert me["org_name"] == "Hooked Legal"
+
+
+def test_first_requests_for_a_new_org_can_run_concurrently(client):
+    """The dashboard loads several endpoints at once; a brand-new org must not race into a 500."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    h = hdr("org_concurrent_first_visit")
+    paths = ["/runs", "/repos", "/org/settings"] * 6
+    with ThreadPoolExecutor(max_workers=len(paths)) as pool:
+        codes = list(pool.map(lambda p: client.get(p, headers=h).status_code, paths))
+    assert set(codes) == {200}
