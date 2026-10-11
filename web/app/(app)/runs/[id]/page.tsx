@@ -1,17 +1,25 @@
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+
 import { decideRun, reviewFinding } from "@/app/actions";
 import { formatDate, SeverityBadge, StatusBadge } from "@/components/Badges";
-import { api, roles } from "@/lib/api";
+import { api, isNotFound, roles } from "@/lib/api";
 import type { Finding, Run } from "@/lib/types";
+
+export const metadata: Metadata = { title: "Audit run" };
 
 const REVIEW_OPTIONS = ["open", "accepted_risk", "false_positive", "fixed"] as const;
 
 export default async function RunPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const [run, findings, { canApprove }] = await Promise.all([
-    api<Run>(`/runs/${id}`),
-    api<Finding[]>(`/findings?run_id=${id}`),
+    api<Run>(`/runs/${encodeURIComponent(id)}`),
+    api<Finding[]>(`/findings?run_id=${encodeURIComponent(id)}`),
     roles(),
-  ]);
+  ]).catch((err) => {
+    if (isNotFound(err)) notFound();
+    throw err;
+  });
   const violations = findings.filter((f) => f.status === "violation");
   const reviews = findings.filter((f) => f.status === "needs_review");
   return (

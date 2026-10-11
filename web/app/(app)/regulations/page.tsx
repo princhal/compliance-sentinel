@@ -1,6 +1,10 @@
+import type { Metadata } from "next";
+
 import { SeverityBadge } from "@/components/Badges";
 import { api } from "@/lib/api";
 import type { Obligation, Regulation } from "@/lib/types";
+
+export const metadata: Metadata = { title: "Regulations" };
 
 export default async function RegulationsPage() {
   const [docs, obligations] = await Promise.all([

@@ -1,6 +1,10 @@
+import type { Metadata } from "next";
+
 import { saveSettings } from "@/app/actions";
 import { api, roles } from "@/lib/api";
 import type { OrgSettings } from "@/lib/types";
+
+export const metadata: Metadata = { title: "Alert settings" };
 
 export default async function SettingsPage() {
   const [settings, { isAdmin }] = await Promise.all([api<OrgSettings>("/org/settings"), roles()]);

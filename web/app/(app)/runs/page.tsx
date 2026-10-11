@@ -1,9 +1,12 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import { triggerRun } from "@/app/actions";
 import { formatDate, StatusBadge } from "@/components/Badges";
 import { api, roles } from "@/lib/api";
 import type { Repo, Run } from "@/lib/types";
+
+export const metadata: Metadata = { title: "Audit runs" };
 
 export default async function RunsPage() {
   const [runs, repos, { isAdmin }] = await Promise.all([

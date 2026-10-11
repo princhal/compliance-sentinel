@@ -1,7 +1,11 @@
+import type { Metadata } from "next";
+
 import { addRepo, deleteRepo } from "@/app/actions";
 import { formatDate } from "@/components/Badges";
 import { api, roles } from "@/lib/api";
 import type { Repo } from "@/lib/types";
+
+export const metadata: Metadata = { title: "Repositories" };
 
 export default async function ReposPage() {
   const [repos, { isAdmin }] = await Promise.all([api<Repo[]>("/repos"), roles()]);

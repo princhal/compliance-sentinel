@@ -6,7 +6,8 @@ from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 
 from fastapi import Depends, HTTPException, Request, status
-from sqlalchemy import select
+from sqlalchemy import ColumnElement, select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
 from sentinel.auth.clerk import ROLE_ADMIN, Principal, verify_clerk, verify_dev
@@ -38,23 +39,26 @@ def current_org(principal: Principal = Depends(current_principal),
     if not principal.org_id:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Select an organization first")
     # Upsert lazily: the token is authoritative even if the Clerk webhook has not arrived yet.
-    org = db.scalar(select(Organization).where(Organization.clerk_org_id == principal.org_id))
-    if org is None:
-        org = Organization(clerk_org_id=principal.org_id, name=principal.org_id)
-        db.add(org)
-    user = db.scalar(select(User).where(User.clerk_user_id == principal.user_id))
-    if user is None:
-        user = User(clerk_user_id=principal.user_id, email=principal.email)
-        db.add(user)
-    db.flush()
-    member = db.scalar(select(Membership).where(Membership.org_id == org.id,
-                                                Membership.user_id == user.id))
-    if member is None:
-        db.add(Membership(org_id=org.id, user_id=user.id, role=principal.role or "org:member"))
-    elif principal.role and member.role != principal.role:
+    # The dashboard fires several requests at once, so a new org's first page load races here;
+    # ON CONFLICT DO NOTHING lets every request settle on the same rows instead of failing.
+    org = _get_or_create(db, Organization, Organization.clerk_org_id == principal.org_id,
+                         clerk_org_id=principal.org_id, name=principal.org_id)
+    user = _get_or_create(db, User, User.clerk_user_id == principal.user_id,
+                          clerk_user_id=principal.user_id, email=principal.email)
+    member = _get_or_create(db, Membership, (Membership.org_id == org.id) & (Membership.user_id == user.id),
+                            org_id=org.id, user_id=user.id, role=principal.role or "org:member")
+    if principal.role and member.role != principal.role:
         member.role = principal.role
     db.flush()
     return OrgContext(principal=principal, org=org, user=user)
+
+
+def _get_or_create[T](db: Session, model: type[T], where: ColumnElement[bool], **values: object) -> T:
+    row = db.scalar(select(model).where(where))
+    if row is None:
+        db.execute(pg_insert(model).values(**values).on_conflict_do_nothing())
+        row = db.scalars(select(model).where(where)).one()
+    return row
 
 
 def require_role(*roles: str) -> Callable[[OrgContext], OrgContext]:

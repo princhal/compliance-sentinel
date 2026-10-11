@@ -44,7 +44,7 @@ button.danger { color: var(--critical); }
 input, select { font: inherit; padding: 7px 10px; border-radius: 8px; border: 1px solid var(--line);
   background: var(--surface); color: var(--ink); max-width: 100%; }
 form.inline { display: inline-flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-form.stack { display: grid; gap: 12px; max-width: 520px; }
+.stack { display: grid; gap: 12px; max-width: 520px; }
 label { display: grid; gap: 4px; font-size: 14px; }
 pre { background: var(--code); border: 1px solid var(--line); border-radius: 8px; padding: 10px;
   font: 12.5px/1.45 ui-monospace, Menlo, monospace; overflow-x: auto; margin: 10px 0; }
