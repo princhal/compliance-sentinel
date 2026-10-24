@@ -1,5 +1,5 @@
 {
-  "run_id": "28986059-667b-4c60-8dc4-3b62e77f3c20",
+  "run_id": "6433a36d-11b3-454b-a734-29ca3189e317",
   "engine": "offline-heuristic",
   "findings": {
     "violations_labeled": 26,
@@ -33,7 +33,7 @@
     "false_positive_locations": []
   },
   "citations": {
-    "citations_checked": 56,
+    "citations_checked": 49,
     "citation_accuracy": 1.0
   },
   "retrieval": {
@@ -52,6 +52,6 @@
     "input_tokens": 0,
     "output_tokens": 0,
     "usd": 0.0,
-    "seconds": 1.3
+    "seconds": 0.8
   }
 }
