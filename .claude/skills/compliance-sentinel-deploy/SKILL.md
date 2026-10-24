@@ -5,7 +5,30 @@ description: Deploy Compliance Sentinel to production - the FastAPI api and Bull
 
 # Compliance Sentinel Deployment
 
-## Architecture
+## Current deploy: free tier (no card)
+
+The live deploy uses free tiers only. The Fly.io setup below needs a card and is kept for later.
+
+| Part | Service | ID / URL |
+|---|---|---|
+| Dashboard | Vercel Hobby, project `compliance-sentinel`, root `web/` | https://compliance-sentinel-psi.vercel.app |
+| API | Render free web service, Docker, region `ohio` | `srv-dbedvs0ae00c73crbjgg`, https://compliance-sentinel-api.onrender.com |
+| Postgres + pgvector | Neon free, project `jolly-waterfall-43211991` (aws-us-east-2), org `org-withered-poetry-68892112` | pooled URL from `neonctl connection-string --pooled` |
+| Storage | Tigris free (console.storage.dev), endpoint `https://t3.storage.dev` | `STORAGE_BACKEND=s3` once keys are set; `local` (wiped on restart) until then |
+| Daily scrape | GitHub Actions `.github/workflows/daily-scrape.yml` -> `POST /internal/scrape` | secrets `SENTINEL_API_URL`, `INTERNAL_API_TOKEN` |
+
+- No worker and no Redis: Render has `JOBS_INLINE=true`, so audits and `/internal/scrape` run in the API process.
+- Render free sleeps after 15 min idle (first request ~1 min) and has 512 MB RAM.
+- Render has no pre-deploy command on free: run migrations locally against Neon with
+  `DATABASE_URL=postgresql+psycopg://... sentinel db-upgrade` before deploying a migration.
+- Render did not auto-deploy on push for this API-created service. Trigger deploys with
+  `POST https://api.render.com/v1/services/<id>/deploys`, using the CLI token in `~/.render/cli.yaml`.
+  Env var changes (`PUT .../env-vars/<KEY>`) also need a deploy to apply.
+- Scheduled GitHub workflows only run from the default branch, so the cron needs the workflow on `main`.
+- Vercel: `web/vercel.json` sets `framework: nextjs` (a CLI-created project has none);
+  `web/.vercelignore` keeps `.env*.local` out of uploads. Deploy with `cd web && vercel --prod --yes`.
+
+## Architecture (Fly.io, paid)
 
 ```
 Vercel (web/, Next.js + Clerk) --Bearer Clerk token--> Fly app (fra)
