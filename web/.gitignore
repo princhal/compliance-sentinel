@@ -1,1 +1,3 @@
 .clerk/
+.vercel
+.env*
