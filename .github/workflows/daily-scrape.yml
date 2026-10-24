@@ -1,0 +1,23 @@
+# Daily regulation scrape for the free-tier deploy, which has no BullMQ worker. The API runs the
+# scrape -> ingest -> re-audit chain in-process because it has JOBS_INLINE=true.
+name: daily-scrape
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wake the API (free instances sleep when idle)
+        run: |
+          for i in $(seq 1 12); do
+            curl -fsS --max-time 30 "${{ secrets.SENTINEL_API_URL }}/health" && exit 0
+            sleep 10
+          done
+          exit 1
+      - name: Trigger the scrape
+        run: |
+          curl -fsS -X POST "${{ secrets.SENTINEL_API_URL }}/internal/scrape" \
+            -H "x-internal-token: ${{ secrets.INTERNAL_API_TOKEN }}"

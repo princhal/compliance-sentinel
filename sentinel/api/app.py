@@ -248,10 +248,26 @@ def put_org_settings(body: OrgSettingsIn, ctx: OrgContext = Depends(require_role
 # --- Internal ----------------------------------------------------------------------------------
 
 
+def _scrape_inline() -> None:
+    """The worker's scrape -> ingest -> re-audit chain, run in-process when JOBS_INLINE is set."""
+    from sentinel.agent.runner import create_run, run_audit
+    from sentinel.queue import stages
+
+    new = stages.scrape_and_ingest()["new_obligations"]
+    if new:
+        for org_id, repo_id in stages.repos_to_reaudit():
+            run_audit(create_run(uuid.UUID(org_id), uuid.UUID(repo_id), "regulation_change",
+                                 None, new))
+
+
 @app.post("/internal/scrape", status_code=202)
-async def internal_scrape(x_internal_token: str = Header(default="")) -> dict:
+async def internal_scrape(background: BackgroundTasks,
+                          x_internal_token: str = Header(default="")) -> dict:
     expected = get_settings().internal_api_token
     if not expected or not hmac.compare_digest(x_internal_token, expected):
         raise HTTPException(401, "Invalid internal token")
+    if get_settings().jobs_inline:
+        background.add_task(_scrape_inline)
+        return {"job_id": None, "inline": True}
     job_id = await jobs.enqueue(jobs.SCRAPE, "scrape-all", {})
     return {"job_id": job_id}

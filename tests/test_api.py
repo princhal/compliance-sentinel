@@ -100,6 +100,17 @@ def test_internal_scrape_requires_token(client):
     assert client.post("/internal/scrape", headers={"x-internal-token": "nope"}).status_code == 401
 
 
+def test_internal_scrape_runs_inline_without_redis(client, monkeypatch):
+    from sentinel.api import app as api_app
+
+    calls = []
+    monkeypatch.setattr(api_app, "_scrape_inline", lambda: calls.append("scraped"))
+    resp = client.post("/internal/scrape", headers={"x-internal-token": "test-internal-token"})
+    assert resp.status_code == 202
+    assert resp.json() == {"job_id": None, "inline": True}
+    assert calls == ["scraped"]
+
+
 def test_clerk_webhook_signature_and_idempotency(client, monkeypatch):
     import base64
 
