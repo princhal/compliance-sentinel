@@ -23,6 +23,7 @@ from sentinel.config import get_settings
 from sentinel.db.models import AuditRun, Document, Finding, Obligation, Repo, Report
 from sentinel.queue import jobs
 from sentinel.storage import Storage
+from sentinel.taxonomy import Severity
 
 log = logging.getLogger(__name__)
 settings = get_settings()
@@ -82,8 +83,6 @@ def list_repos(ctx: OrgContext = Depends(current_org), db: Session = Depends(get
 @app.post("/repos", status_code=201)
 def create_repo(body: RepoIn, ctx: OrgContext = Depends(require_role()),
                 db: Session = Depends(get_db)) -> dict:
-    if not body.url.startswith("https://") and settings.environment == "production":
-        raise HTTPException(422, "Use an https:// git URL")
     if db.scalar(select(Repo).where(Repo.org_id == ctx.org.id, Repo.name == body.name)):
         raise HTTPException(409, "A repo with this name already exists")
     repo = Repo(org_id=ctx.org.id, name=body.name, url=body.url, default_branch=body.default_branch)
@@ -154,7 +153,7 @@ def approve_run(run_id: uuid.UUID, body: ApprovalIn, background: BackgroundTasks
 
 
 @app.get("/findings")
-def list_findings(run_id: uuid.UUID | None = None, severity: str | None = None,
+def list_findings(run_id: uuid.UUID | None = None, severity: Severity | None = None,
                   status: str | None = None, category: str | None = None,
                   ctx: OrgContext = Depends(current_org), db: Session = Depends(get_db)) -> list[dict]:
     q = select(Finding).where(Finding.org_id == ctx.org.id)

@@ -145,3 +145,44 @@ def test_first_requests_for_a_new_org_can_run_concurrently(client):
     with ThreadPoolExecutor(max_workers=len(paths)) as pool:
         codes = list(pool.map(lambda p: client.get(p, headers=h).status_code, paths))
     assert set(codes) == {200}
+
+
+@pytest.mark.parametrize("body", [
+    {"name": "x", "url": "--upload-pack=touch /tmp/pwned"},
+    {"name": "x", "url": "http://github.com/acme/app.git"},
+    {"name": "x", "url": "https://127.0.0.1/acme/app.git"},
+    {"name": "x", "url": "https://169.254.169.254/latest/meta-data"},
+    {"name": "x", "url": "https://localhost:8080/app.git"},
+    {"name": "x", "url": "https://user:token@github.com/acme/app.git"},
+    {"name": "x", "url": "/definitely/not/a/real/path"},
+    {"name": "x", "url": "https://github.com/acme/app.git", "default_branch": "--orphan"},
+    {"name": "x", "url": "https://github.com/acme/app.git", "default_branch": "a" * 129},
+    {"name": "x", "url": "https://github.com/acme/app.git", "default_branch": "feat/../main"},
+])
+def test_create_repo_rejects_bad_input(client, body):
+    assert client.post("/repos", json=body, headers=hdr("org_delta")).status_code == 422
+
+
+def test_create_repo_accepts_https_and_branch_names(client):
+    ok = client.post("/repos", json={"name": "public-app", "url": "https://github.com/acme/app.git",
+                                     "default_branch": "release/2026.10"}, headers=hdr("org_delta"))
+    assert ok.status_code == 201
+    assert ok.json()["default_branch"] == "release/2026.10"
+
+
+def test_local_repo_paths_are_rejected_in_production(monkeypatch):
+    from pydantic import ValidationError
+
+    from sentinel.api.schemas import RepoIn
+    from sentinel.seed import DEMO_REPO
+
+    assert RepoIn(name="demo", url=str(DEMO_REPO)).url == str(DEMO_REPO)
+    monkeypatch.setattr("sentinel.api.schemas.get_settings",
+                        lambda: type("S", (), {"environment": "production"})())
+    with pytest.raises(ValidationError):
+        RepoIn(name="demo", url=str(DEMO_REPO))
+
+
+def test_findings_severity_filter_is_validated(client):
+    assert client.get("/findings?severity=urgent", headers=hdr("org_delta")).status_code == 422
+    assert client.get("/findings?severity=high", headers=hdr("org_delta")).status_code == 200
